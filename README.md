@@ -92,8 +92,8 @@ Before you begin, ensure you have the following:
 Start by cloning the repository to your local machine:
 
 ```bash
-git clone <repository_url>
-cd bicep
+git clone https://github.com/sjuratov/cooking-wizard.git
+cd cooking-wizard
 ```
 
 ### Step 2: Configure Parameters
