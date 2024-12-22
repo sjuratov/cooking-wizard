@@ -175,3 +175,4 @@ resource diagnosticSettings 'Microsoft.Insights/diagnosticSettings@2021-05-01-pr
 output name string = project.name
 output id string = project.id
 output principalId string = project.identity.principalId
+output projectDiscoveryUrl string = project.properties.discoveryUrl

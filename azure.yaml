@@ -12,3 +12,9 @@ hooks:
         run: ./scripts/preprovision.sh
         interactive: true
         continueOnError: false
+    postprovision:
+      posix:
+        shell: sh
+        run: ./scripts/postprovision.sh
+        interactive: true
+        continueOnError: false

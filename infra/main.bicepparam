@@ -1,7 +1,7 @@
 using './main.bicep'
 
-param prefix = 'secure'
-param suffix = 'test'
+param prefix = 'sasaj'
+param suffix = 'jsasa'
 param userObjectId = readEnvironmentVariable('AZURE_AUTH_OBJECT_ID')
 param keyVaultEnablePurgeProtection = false
 param acrEnabled = true

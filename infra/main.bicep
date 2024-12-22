@@ -391,13 +391,19 @@ module networkSecurityPerimeter 'modules/networkSecurityPerimeter.bicep' = if (n
   }
 }
 
-output deploymentInfo object = {
-  subscriptionId: subscription().subscriptionId
-  resourceGroupName: resourceGroup().name
-  location: location
-  storageAccountName: storageAccount.outputs.name
-  aiServicesName: aiServices.outputs.name
-  aiServicesEndpoint: aiServices.outputs.endpoint
-  hubName: hub.outputs.name
-  projectName: project.outputs.name
-}
+// output deploymentInfo object = {
+//   subscriptionId: subscription().subscriptionId
+//   resourceGroupName: resourceGroup().name
+//   location: location
+//   storageAccountName: storageAccount.outputs.name
+//   aiServicesName: aiServices.outputs.name
+//   aiServicesEndpoint: aiServices.outputs.endpoint
+//   hubName: hub.outputs.name
+//   projectName: project.outputs.name
+//   projectDiscoveryUrl: project.outputs.projectDiscoveryUrl
+// }
+
+
+output AZURE_SUBSCRIPTION_ID string = subscription().subscriptionId
+output AZURE_AI_FOUNDRY_PROJECT_NAME string = project.outputs.name
+output AZURE_AI_FOUNDRY_DISCOVERY_URL string = project.outputs.projectDiscoveryUrl
