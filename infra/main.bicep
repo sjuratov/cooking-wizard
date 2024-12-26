@@ -407,3 +407,4 @@ module networkSecurityPerimeter 'modules/networkSecurityPerimeter.bicep' = if (n
 output AZURE_SUBSCRIPTION_ID string = subscription().subscriptionId
 output AZURE_AI_FOUNDRY_PROJECT_NAME string = project.outputs.name
 output AZURE_AI_FOUNDRY_DISCOVERY_URL string = project.outputs.projectDiscoveryUrl
+output AZURE_AI_DEPLOYMENT_MODEL string = openAiDeployments[1].model.name
