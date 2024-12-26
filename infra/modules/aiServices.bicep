@@ -37,9 +37,6 @@ param deployments array = []
 @description('Specifies the workspace id of the Log Analytics used to monitor the Application Gateway.')
 param workspaceId string
 
-@description('Specifies the object id of a Miccrosoft Entra ID user. In general, this the object id of the system administrator who deploys the Azure resources.')
-param userObjectId string = ''
-
 // Variables
 var diagnosticSettingsName = 'diagnosticSettings'
 var aiServicesLogCategories = [
@@ -96,40 +93,6 @@ resource model 'Microsoft.CognitiveServices/accounts/deployments@2023-05-01' = [
     }
   }
 ]
-
-resource cognitiveServicesContributorRoleDefinition 'Microsoft.Authorization/roleDefinitions@2022-04-01' existing = {
-  name: '25fbc0a9-bd7c-42a3-aa1a-3b75d497ee68'
-  scope: subscription()
-}
-
-// This role assignment grants the user the required permissions to eventually delete and purge the Azure AI Services account
-// https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/role-based-access-control#cognitive-services-contributor
-resource cognitiveServicesContributorRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(userObjectId)) {
-  name: guid(aiServices.id, cognitiveServicesContributorRoleDefinition.id, userObjectId)
-  scope: aiServices
-  properties: {
-    roleDefinitionId: cognitiveServicesContributorRoleDefinition.id
-    principalType: 'User'
-    principalId: userObjectId
-  }
-}
-
-resource cognitiveServicesOpenAIContributorRoleDefinition 'Microsoft.Authorization/roleDefinitions@2022-04-01' existing = {
-  name: 'a001fd3d-188f-4b5d-821b-7da978bf7442'
-  scope: subscription()
-}
-
-// This role assignment grants the user the required permissions to make inference API calls with Microsoft Entra ID
-// https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/role-based-access-control#cognitive-services-openai-contributor
-resource cognitiveServicesOpenAIContributorRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(userObjectId)) {
-  name: guid(aiServices.id, cognitiveServicesOpenAIContributorRoleDefinition.id, userObjectId)
-  scope: aiServices
-  properties: {
-    roleDefinitionId: cognitiveServicesOpenAIContributorRoleDefinition.id
-    principalType: 'User'
-    principalId: userObjectId
-  }
-}
 
 resource aiServicesDiagnosticSettings 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
   name: diagnosticSettingsName

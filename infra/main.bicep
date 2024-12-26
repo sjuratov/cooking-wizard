@@ -245,9 +245,6 @@ module keyVault 'modules/keyVault.bicep' = {
     enableSoftDelete: keyVaultEnableSoftDelete
     softDeleteRetentionInDays: keyVaultSoftDeleteRetentionInDays
     workspaceId: workspace.outputs.id
-
-    // role assignments
-    userObjectId: userObjectId
   }
 }
 
@@ -303,10 +300,6 @@ module storageAccount 'modules/storageAccount.bicep' = {
     networkAclsDefaultAction: storageAccountANetworkAclsDefaultAction
     supportsHttpsTrafficOnly: storageAccountSupportsHttpsTrafficOnly
     workspaceId: workspace.outputs.id
-
-    // role assignments
-    userObjectId: userObjectId
-    aiServicesPrincipalId: aiServices.outputs.principalId
   }
 }
 
@@ -326,9 +319,6 @@ module aiServices 'modules/aiServices.bicep' = {
     publicNetworkAccess: aiServicesPublicNetworkAccess
     deployments: openAiDeployments
     workspaceId: workspace.outputs.id
-
-    // role assignments
-    userObjectId: userObjectId
   }
 }
 
@@ -355,9 +345,6 @@ module hub 'modules/hub.bicep' = {
     publicNetworkAccess: hubPublicNetworkAccess
     isolationMode: hubIsolationMode
     workspaceId: workspace.outputs.id
-
-    // role assignments
-    userObjectId: userObjectId
   }
 }
 
@@ -374,10 +361,6 @@ module project 'modules/project.bicep' = {
     publicNetworkAccess: projectPublicNetworkAccess
     hubId: hub.outputs.id
     workspaceId: workspace.outputs.id
-
-    // role assignments
-    userObjectId: userObjectId
-    aiServicesPrincipalId: aiServices.outputs.principalId
   }
 }
 
@@ -391,18 +374,219 @@ module networkSecurityPerimeter 'modules/networkSecurityPerimeter.bicep' = if (n
   }
 }
 
-// output deploymentInfo object = {
-//   subscriptionId: subscription().subscriptionId
-//   resourceGroupName: resourceGroup().name
-//   location: location
-//   storageAccountName: storageAccount.outputs.name
-//   aiServicesName: aiServices.outputs.name
-//   aiServicesEndpoint: aiServices.outputs.endpoint
-//   hubName: hub.outputs.name
-//   projectName: project.outputs.name
-//   projectDiscoveryUrl: project.outputs.projectDiscoveryUrl
-// }
+////////////////////////////////////////////////////////////////////////////////////////
+// Roles definitions and assignments
+////////////////////////////////////////////////////////////////////////////////////////
 
+/////////////////
+// Azure AI Services
+/////////////////
+
+// Cognitive Services Contributor
+resource cognitiveServicesContributorRoleDefinition 'Microsoft.Authorization/roleDefinitions@2022-04-01' existing = {
+  name: '25fbc0a9-bd7c-42a3-aa1a-3b75d497ee68'
+  scope: subscription()
+}
+
+resource cognitiveServicesContributorRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(userObjectId)) {
+  name: guid(aiServices.name, cognitiveServicesContributorRoleDefinition.id, userObjectId, 'User')
+  scope: resourceGroup()
+  properties: {
+    roleDefinitionId: cognitiveServicesContributorRoleDefinition.id
+    principalType: 'User'
+    principalId: userObjectId
+  }
+}
+
+resource cognitiveServicesContributorServicePrincipalRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(aiServices.name, cognitiveServicesContributorRoleDefinition.id, userObjectId, 'ServicePrincipal')
+  scope: resourceGroup()
+  properties: {
+    roleDefinitionId: cognitiveServicesContributorRoleDefinition.id
+    principalType: 'ServicePrincipal'
+    principalId: project.outputs.principalId
+  }
+}
+
+// Cognitive Services OpenAI Contributor
+resource cognitiveServicesOpenAIContributorRoleDefinition 'Microsoft.Authorization/roleDefinitions@2022-04-01' existing = {
+  name: 'a001fd3d-188f-4b5d-821b-7da978bf7442'
+  scope: subscription()
+}
+
+resource cognitiveServicesOpenAIContributorRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(userObjectId)) {
+  name: guid(aiServices.name, cognitiveServicesOpenAIContributorRoleDefinition.id, userObjectId)
+  scope: resourceGroup()
+  properties: {
+    roleDefinitionId: cognitiveServicesOpenAIContributorRoleDefinition.id
+    principalType: 'User'
+    principalId: userObjectId
+  }
+}
+
+// Cognitive Services OpenAI User
+resource cognitiveServicesOpenAIUserRoleDefinition 'Microsoft.Authorization/roleDefinitions@2022-04-01' existing = {
+  name: '5e0bd9bd-7b93-4f28-af87-19fc36ad61bd'
+  scope: subscription()
+}
+
+resource cognitiveServicesOpenAIUserRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(aiServices.name, cognitiveServicesOpenAIUserRoleDefinition.id, userObjectId)
+  scope: resourceGroup()
+  properties: {
+    roleDefinitionId: cognitiveServicesOpenAIUserRoleDefinition.id
+    principalType: 'ServicePrincipal'
+    principalId: project.outputs.principalId
+  }
+}
+
+// Cognitive Services User
+resource cognitiveServicesUserRoleDefinition 'Microsoft.Authorization/roleDefinitions@2022-04-01' existing = {
+  name: 'a97b65f3-24c7-4388-baec-2e87135dc908'
+  scope: subscription()
+}
+
+resource cognitiveServicesUserRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(aiServices.name, cognitiveServicesUserRoleDefinition.id, userObjectId)
+  scope: resourceGroup()
+  properties: {
+    roleDefinitionId: cognitiveServicesUserRoleDefinition.id
+    principalType: 'ServicePrincipal'
+    principalId: project.outputs.principalId
+  }
+}
+
+/////////////////
+// Azure AI Foundry Hub
+/////////////////
+
+// AzureML Data Scientist
+resource azureMLDataScientistRole 'Microsoft.Authorization/roleDefinitions@2022-04-01' existing = {
+  name: 'f6c7c914-8db3-469d-8ca1-694a8f32e121'
+  scope: subscription()
+}
+
+resource azureMLDataScientistUserRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(userObjectId)) {
+  name: guid(hub.name, azureMLDataScientistRole.id, userObjectId)
+  scope: resourceGroup()
+  properties: {
+    roleDefinitionId: azureMLDataScientistRole.id
+    principalType: 'User'
+    principalId: userObjectId
+  }
+}
+
+/////////////////
+// Azure AI Foundry Project
+/////////////////
+
+resource azureMLDataScientistManagedIdentityProjectRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' =  {
+  name: guid(project.name, azureMLDataScientistRole.id, aiServices.name)
+  scope: resourceGroup()
+  properties: {
+    roleDefinitionId: azureMLDataScientistRole.id
+    principalType: 'ServicePrincipal'
+    principalId: aiServices.outputs.principalId
+  }
+}
+
+/////////////////
+// Azure Key Vault
+/////////////////
+
+// Key Vault Administrator
+resource keyVaultAdministratorRoleDefinition 'Microsoft.Authorization/roleDefinitions@2022-04-01' existing = {
+  name: '00482a5a-887f-4fb3-b363-3b7fe8e74483'
+  scope: subscription()
+}
+
+resource keyVaultAdministratorUserRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(userObjectId)) {
+  name: guid(keyVault.name, keyVaultAdministratorRoleDefinition.id, userObjectId)
+  scope: resourceGroup()
+  properties: {
+    roleDefinitionId: keyVaultAdministratorRoleDefinition.id
+    principalType: 'User'
+    principalId: userObjectId
+  }
+}
+
+/////////////////
+// Azure Storage Account
+/////////////////
+
+// Storage Account Contributor
+resource storageAccountContributorRoleDefinition 'Microsoft.Authorization/roleDefinitions@2022-04-01' existing = {
+  name: '17d1049b-9a84-46fb-8f53-869881c3d3ab'
+  scope: subscription()
+}
+
+// Storage Blob Data Contributor
+resource storageBlobDataContributorRoleDefinition 'Microsoft.Authorization/roleDefinitions@2022-04-01' existing = {
+  name: 'ba92f5b4-2d11-453d-a403-e96b0029c9fe'
+  scope: subscription()
+}
+
+// Storage File Data Privileged Contributor
+resource storageFileDataPrivilegedContributorRoleDefinition 'Microsoft.Authorization/roleDefinitions@2022-04-01' existing = {
+  name: '69566ab7-960f-475b-8e7c-b3118f30c6bd'
+  scope: subscription()
+}
+
+// Storage Table Data Contributor
+resource storageTableDataContributorRoleDefinition 'Microsoft.Authorization/roleDefinitions@2022-04-01' existing = {
+  name: '0a9a7e1f-b9d0-4cc4-a60d-0319b160aaa3'
+  scope: subscription()
+}
+
+resource storageAccountContributorUserRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(userObjectId)) {
+  name: guid(storageAccount.name, storageAccountContributorRoleDefinition.id, userObjectId)
+  scope: resourceGroup()
+  properties: {
+    roleDefinitionId: storageAccountContributorRoleDefinition.id
+    principalType: 'User'
+    principalId: userObjectId
+  }
+}
+
+resource storageBlobDataContributorUserRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(userObjectId)) {
+  name: guid(storageAccount.name, storageBlobDataContributorRoleDefinition.id, userObjectId)
+  scope: resourceGroup()
+  properties: {
+    roleDefinitionId: storageBlobDataContributorRoleDefinition.id
+    principalType: 'User'
+    principalId: userObjectId
+  }
+}
+
+resource storageFileDataPrivilegedContributorUserRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(userObjectId)) {
+  name: guid(storageAccount.name, storageFileDataPrivilegedContributorRoleDefinition.id, userObjectId)
+  scope: resourceGroup()
+  properties: {
+    roleDefinitionId: storageFileDataPrivilegedContributorRoleDefinition.id
+    principalType: 'User'
+    principalId: userObjectId
+  }
+}
+
+resource storageTableDataContributorUserRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(userObjectId)) {
+  name: guid(storageAccount.name, storageTableDataContributorRoleDefinition.id, userObjectId)
+  scope: resourceGroup()
+  properties: {
+    roleDefinitionId: storageTableDataContributorRoleDefinition.id
+    principalType: 'User'
+    principalId: userObjectId
+  }
+}
+
+resource storageBlobDataContributorManagedIdentityRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(storageAccount.name, storageBlobDataContributorRoleDefinition.id, aiServices.name)
+  scope: resourceGroup()
+  properties: {
+    roleDefinitionId: storageBlobDataContributorRoleDefinition.id
+    principalType: 'ServicePrincipal'
+    principalId: aiServices.outputs.principalId
+  }
+}
 
 output AZURE_SUBSCRIPTION_ID string = subscription().subscriptionId
 output AZURE_AI_FOUNDRY_PROJECT_NAME string = project.outputs.name

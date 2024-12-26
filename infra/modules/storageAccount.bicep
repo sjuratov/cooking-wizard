@@ -49,12 +49,6 @@ param networkAclsDefaultAction string = 'Allow'
 @description('Specifies whether the storage account should only support HTTPS traffic.')
 param supportsHttpsTrafficOnly bool = true
 
-@description('Specifies the object id of a Miccrosoft Entra ID user. In general, this the object id of the system administrator who deploys the Azure resources.')
-param userObjectId string = ''
-
-@description('Specifies the principal id of the Azure AI Services resource.')
-param aiServicesPrincipalId string = ''
-
 @description('Specifies the resource tags.')
 param tags object
 
@@ -160,78 +154,6 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2021-09-01' = {
     }
     publicNetworkAccess: allowStorageAccountPublicAccess
     supportsHttpsTrafficOnly: supportsHttpsTrafficOnly
-  }
-}
-
-resource storageAccountContributorRoleDefinition 'Microsoft.Authorization/roleDefinitions@2022-04-01' existing = {
-  name: '17d1049b-9a84-46fb-8f53-869881c3d3ab'
-  scope: subscription()
-}
-
-resource storageBlobDataContributorRoleDefinition 'Microsoft.Authorization/roleDefinitions@2022-04-01' existing = {
-  name: 'ba92f5b4-2d11-453d-a403-e96b0029c9fe'
-  scope: subscription()
-}
-
-resource storageFileDataPrivilegedContributorRoleDefinition 'Microsoft.Authorization/roleDefinitions@2022-04-01' existing = {
-  name: '69566ab7-960f-475b-8e7c-b3118f30c6bd'
-  scope: subscription()
-}
-
-resource storageTableDataContributorRoleDefinition 'Microsoft.Authorization/roleDefinitions@2022-04-01' existing = {
-  name: '0a9a7e1f-b9d0-4cc4-a60d-0319b160aaa3'
-  scope: subscription()
-}
-
-// This role assignment grants the user the required permissions to create a Prompt Flow in Azure AI Foundry
-resource storageAccountContributorUserRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(userObjectId)) {
-  name: guid(storageAccount.id, storageAccountContributorRoleDefinition.id, userObjectId)
-  scope: storageAccount
-  properties: {
-    roleDefinitionId: storageAccountContributorRoleDefinition.id
-    principalType: 'User'
-    principalId: userObjectId
-  }
-}
-
-resource storageBlobDataContributorUserRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(userObjectId)) {
-  name: guid(storageAccount.id, storageBlobDataContributorRoleDefinition.id, userObjectId)
-  scope: storageAccount
-  properties: {
-    roleDefinitionId: storageBlobDataContributorRoleDefinition.id
-    principalType: 'User'
-    principalId: userObjectId
-  }
-}
-
-resource storageFileDataPrivilegedContributorUserRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(userObjectId)) {
-  name: guid(storageAccount.id, storageFileDataPrivilegedContributorRoleDefinition.id, userObjectId)
-  scope: storageAccount
-  properties: {
-    roleDefinitionId: storageFileDataPrivilegedContributorRoleDefinition.id
-    principalType: 'User'
-    principalId: userObjectId
-  }
-}
-
-resource storageTableDataContributorUserRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(userObjectId)) {
-  name: guid(storageAccount.id, storageTableDataContributorRoleDefinition.id, userObjectId)
-  scope: storageAccount
-  properties: {
-    roleDefinitionId: storageTableDataContributorRoleDefinition.id
-    principalType: 'User'
-    principalId: userObjectId
-  }
-}
-
-// This role assignment grants the Azure AI Services managed identity the required permissions to access and transcribe the input audio and video files stored in the storage account
-resource storageBlobDataContributorManagedIdentityRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(aiServicesPrincipalId)) {
-  name: guid(storageAccount.id, storageBlobDataContributorRoleDefinition.id, aiServicesPrincipalId)
-  scope: storageAccount
-  properties: {
-    roleDefinitionId: storageBlobDataContributorRoleDefinition.id
-    principalType: 'ServicePrincipal'
-    principalId: aiServicesPrincipalId
   }
 }
 
