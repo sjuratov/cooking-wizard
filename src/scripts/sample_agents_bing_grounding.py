@@ -27,7 +27,7 @@ from azure.ai.projects.models import BingGroundingTool
 # Adapt scripts to work with local environment
 # STAR
 import sys
-sys.path.append("../..")
+sys.path.append("..")
 from utils import load_azd_env, set_azure_ai_project_connection_string, setup_logging
 load_azd_env()
 set_azure_ai_project_connection_string()
