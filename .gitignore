@@ -10,3 +10,4 @@ wheels/
 .venv
 .azure
 .DS_Store
+samples/
