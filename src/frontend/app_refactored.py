@@ -93,7 +93,16 @@ with tracer.start_as_current_span(scenario):
                 for data_point in reversed(messages.data):
                     last_message_content = data_point.content[-1]
                     if isinstance(last_message_content, MessageTextContent):
-                        output = f"""**{data_point.role}:**\n\n---\n\n{last_message_content.text.value.strip()}\n\n"""
+                        # output = f"""**{data_point.role}:**\n\n---\n\n{last_message_content.text.value.strip()}\n\n"""
+                        # print(output)
+                        # file.write(output)
+                        if data_point.role == 'user':
+                            icon = '👤'
+                        elif data_point.role == 'assistant':
+                            icon = '🤖'
+                        else:
+                            icon = ''
+                        output = f"""**{icon} {data_point.role}:**\n\n---\n\n{last_message_content.text.value.strip()}\n\n"""
                         print(output)
                         file.write(output)
 
