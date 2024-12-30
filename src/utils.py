@@ -4,6 +4,7 @@ import json
 from dotenv import load_dotenv
 from urllib.parse import urlparse
 import os
+import time
 
 def load_azd_env():
     """Get path to current azd env file and load file using python-dotenv"""
@@ -59,6 +60,73 @@ def get_file_paths(data_folder):
             file_paths.append(file_path)
 
     return file_paths
+
+def enable_tracing(project_client, tracing="console"):
+    if tracing == "console":
+        from opentelemetry import trace
+        project_client.telemetry.enable(destination=sys.stdout)
+    elif tracing == "azure_monitor":
+        from opentelemetry import trace
+        from azure.monitor.opentelemetry import configure_azure_monitor
+
+        application_insights_connection_string = project_client.telemetry.get_connection_string()
+        if not application_insights_connection_string:
+            print("Application Insights was not enabled for this project.")
+            print("Enable it via the 'Tracing' tab in your AI Foundry project page.")
+            exit()
+        configure_azure_monitor(connection_string=application_insights_connection_string)
+
+    scenario = os.path.basename(__file__)
+    tracer = trace.get_tracer(__name__)
+    return tracer, scenario
+
+class RunAgent:
+    def __init__(self, project_client, thread_id, agent_name, agent_instructions, user_message):
+        self.project_client = project_client
+        self.thread_id = thread_id
+        self.agent_name = agent_name
+        self.agent_instructions = agent_instructions
+        self.user_message = user_message
+
+    def create_agent(self):
+        agent = self.project_client.agents.create_agent(
+            model=os.environ["AZURE_AI_DEPLOYMENT_MODEL"],
+            name=self.agent_name,
+            instructions=self.agent_instructions
+        )
+        self.id = agent.id
+        print(f"Created {self.agent_name} agent with agent ID: {agent.id}")
+        return agent
+
+    def create_message(self):
+        message = self.project_client.agents.create_message(
+            thread_id=self.thread_id,
+            role="user",
+            content=self.user_message
+        )
+        print(f"Created message, with message ID: {message.id}, on thread ID: {self.thread_id}")
+        return message
+
+    def create_run(self, agent_id):
+        run = self.project_client.agents.create_run(
+            thread_id=self.thread_id, 
+            assistant_id=agent_id
+        )
+        print(f"Created run, with run ID: {run.id}, on thread ID: {self.thread_id}")
+
+        # Poll the run as long as run status is queued or in progress
+        while run.status in ["queued", "in_progress", "requires_action"]:
+            # Wait for two seconds
+            time.sleep(2)
+            run = self.project_client.agents.get_run(thread_id=self.thread_id, run_id=run.id)
+
+            print(f"Run status: {run.status}")
+
+        return run
+
+    def delete_agent(self, agent_id):
+        self.project_client.agents.delete_agent(agent_id)
+        print(f"Deleted agent {self.agent_name}")
 
 def main():
     pass
